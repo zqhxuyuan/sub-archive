@@ -1,0 +1,26 @@
+-- CREATE OR REPLACE FUNCTION insert_new_block_fn()
+-- RETURNS TRIGGER AS
+-- $BODY$
+--     DECLARE
+--         blocks_per_table INTEGER := 100;
+-- --         blocks_per_table INTEGER := 1000000;
+--         table_id INTEGER;
+--         partition_name TEXT;
+--     BEGIN
+--         table_id := NEW.block_num / blocks_per_table;
+--         partition_name := 'blocks_' || table_id;
+--         IF NOT EXISTS (SELECT relname FROM pg_class WHERE relname=partition_name) THEN
+--             RAISE NOTICE 'A partition has been created %', partition_name;
+--             EXECUTE format(
+--                 $SQL$
+--                     CREATE TABLE %s PARTITION OF blocks FOR VALUES FROM (%L) TO (%L);
+--                 $SQL$,
+--                 partition_name,
+--                 table_id * blocks_per_table,
+--                 (table_id + 1) * blocks_per_table
+--             );
+--         END IF;
+--         RETURN NULL;
+--     END;
+-- $BODY$
+-- LANGUAGE PLPGSQL;

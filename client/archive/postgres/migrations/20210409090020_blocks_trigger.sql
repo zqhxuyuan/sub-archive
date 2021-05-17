@@ -1,0 +1,5 @@
+-- DROP TRIGGER IF EXISTS new_block_trigger on blocks;
+-- CREATE TRIGGER new_block_trigger
+-- BEFORE INSERT ON blocks
+-- FOR EACH ROW
+-- EXECUTE PROCEDURE insert_new_block_fn();

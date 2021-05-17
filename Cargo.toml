@@ -1,0 +1,22 @@
+[profile.release]
+panic = "unwind"
+
+[workspace]
+members = [
+    "bin/archive/",
+    "bin/archive/cli",
+    "bin/archive/primitives",
+    "bin/archive/executor",
+    "bin/archive/runtime",
+    "client/common",
+    "client/service",
+    "client/archive/kafka",
+    "client/archive/postgres",
+    "client/core/executor",
+    "client/core/notifier",
+    "client/core/runtime",
+    "client/core/traits",
+]
+
+#[patch."https://github.com/paritytech/substrate"]
+#sc-service = { version = "0.9.0", path = "./client/service" }

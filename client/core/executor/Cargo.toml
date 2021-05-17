@@ -1,0 +1,38 @@
+[package]
+name = "ac-executor"
+version = "0.1.0"
+authors = ["zqhxuyuan <zqhxuyuan@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.11"
+codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive", "full"]}
+serde = "1.0.101"
+serde_json = "1.0.41"
+arc-swap = "1.2.0"
+hashbrown = { version = "0.9", features = ["inline-more"] }
+futures = { version = "0.3.1", features = ["thread-pool"] }
+futures-timer = "3.0.1"
+async-trait = "0.1.42"
+
+sp-api = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sp-core = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sp-runtime = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sc-client-api = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sp-blockchain = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sp-storage = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sc-service = { version = "0.9.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sc-executor = { version = "0.9.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sp-version = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sp-wasm-interface = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev = "22193e0" }
+sp-state-machine = { version = "0.9.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sp-io = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sp-utils = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+
+ac-runtime = { path = "../runtime" }
+ac-traits = { path = "../traits" }
+
+archive-postgres = { path = "../../archive/postgres" }
+archive-kafka = { path = "../../archive/kafka" }

@@ -1,0 +1,25 @@
+[package]
+name = "ac-notifier"
+version = "0.1.0"
+authors = ["zqhxuyuan <zqhxuyuan@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.11"
+futures = { version = "0.3.1", features = ["thread-pool"] }
+futures-timer = "3.0.1"
+timer = "0.2.0"
+chrono = "0.4"
+
+sp-utils = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sp-blockchain = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sc-client-api = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sp-runtime = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+
+ac-executor = { path = "../../core/executor" }
+ac-common = { path = "../../common" }
+
+archive-postgres = { path = "../../archive/postgres" }
+archive-kafka = { path = "../../archive/kafka" }
