@@ -5,14 +5,14 @@ authors = ["Patract <https://github.com/patractlabs>"]
 edition = "2018"
 
 [dependencies]
-log = "0.4.8"
-structopt = "0.3.8"
+log = "0.4"
+structopt = "0.3"
 toml = "0.5"
-serde = { version = "1.0.125", features = ["derive"] }
-
-ac-traits = { path = "../core/traits" }
-archive-postgres = { path = "../archive/postgres" }
-archive-kafka = { path = "../archive/kafka" }
+serde = { version = "1.0", features = ["derive"] }
 
 sc-cli = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.2" }
 sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.2" }
+
+ac-traits = { path = "./traits" }
+archive-postgres = { path = "./postgres" }
+archive-kafka = { path = "./kafka" }

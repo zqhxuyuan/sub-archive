@@ -103,7 +103,8 @@ where
 
         let archive_notifier = Notifier::<sc_client_db::Backend<Block>, Block, _>::new(
             archive_recv,
-            &archive_config,
+            archive_config.postgres,
+            archive_config.kafka.unwrap(),
             client.clone(),
         )
         .unwrap();

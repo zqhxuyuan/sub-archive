@@ -16,8 +16,8 @@ use archive_primitives::Block;
 use archive_runtime::RuntimeApi;
 
 use crate::{
-    cli::Cli,
     chain_spec::{self, ArchiveChainSpec},
+    cli::Cli,
     service,
 };
 
@@ -86,7 +86,8 @@ pub fn gen_genesis_storages() -> Result<Storage, ac_service::Error> {
     let config_path =
         std::env::var("ARCHIVE_JSON").map_err(|_e| sc_service::Error::Other("env".to_string()))?;
     let config_path = PathBuf::from(config_path);
-    let json = ChainSpec::from_json_file(config_path).expect("generate chain spec from json bytes");
+    let json =
+        ArchiveChainSpec::from_json_file(config_path).expect("generate chain spec from json bytes");
     let genesis = json.as_storage_builder().build_storage();
     genesis.map_err(|_e| sc_service::Error::Other("build storage error".to_string()))
 }

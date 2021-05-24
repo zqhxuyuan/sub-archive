@@ -1,6 +1,5 @@
-use ac_common::config::ArchiveConfig;
-use archive_kafka::{BlockPayload, KafkaProducer, MetadataPayload};
-use archive_postgres::{BlockModel, MetadataModel, PostgresDb};
+use archive_kafka::{BlockPayload, KafkaConfig, KafkaProducer, MetadataPayload};
+use archive_postgres::{BlockModel, MetadataModel, PostgresConfig, PostgresDb};
 use futures::prelude::*;
 use log::info;
 use sc_client_api::backend::Backend as SCBackend;
@@ -40,20 +39,19 @@ where
 {
     pub fn new(
         archive_recv: TracingUnboundedReceiver<ArchiveSendMsg<Block>>,
-        archive_config: &ArchiveConfig,
+        postgres: PostgresConfig,
+        kafka: KafkaConfig,
         client: Arc<Client>,
     ) -> sp_blockchain::Result<Self> {
-        let kafka_config = archive_config.kafka.clone().unwrap();
+        let producer =
+            KafkaProducer::new(kafka).map_err(|e| sp_blockchain::Error::Storage(e.to_string()))?;
 
-        let producer = KafkaProducer::new(kafka_config)
-            .map_err(|e| sp_blockchain::Error::Storage(e.to_string()))?;
-
-        let postgresdb = futures::executor::block_on(async move {
-            PostgresDb::new(archive_config.postgres.clone())
+        let postgres = futures::executor::block_on(async move {
+            PostgresDb::new(postgres)
                 .await
                 .map_err(|e| sp_blockchain::Error::Storage(e.to_string()))
         })?;
-        let db = Arc::new(postgresdb);
+        let db = Arc::new(postgres);
         info!(target: "notifier", "notifier $$ create and init archiver ok.");
 
         Ok(Self {

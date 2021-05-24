@@ -29,8 +29,6 @@ sp-state-machine = { git = "https://github.com/paritytech/substrate", branch = "
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.2" }
 sp-utils = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.2" }
 
-ac-runtime = { path = "../runtime" }
 ac-traits = { path = "../traits" }
-
-archive-postgres = { path = "../../archive/postgres" }
-archive-kafka = { path = "../../archive/kafka" }
+archive-postgres = { path = "../postgres" }
+archive-kafka = { path = "../kafka" }

@@ -3,7 +3,7 @@ name = "archive"
 path = "src/main.rs"
 
 [package]
-name = "archive"
+name = "patract-archive"
 version = "0.1.0"
 authors = ["Patract <https://github.com/patractlabs>"]
 edition = "2018"
@@ -18,14 +18,14 @@ members = [
   "primitives",
   "executor",
   "runtime",
-  "client/common",
+  "archive",
+  "archive/kafka",
+  "archive/postgres",
+  "archive/executor",
+  "archive/notifier",
+  "archive/runtime",
+  "archive/traits",
   "client/service",
-  "client/archive/kafka",
-  "client/archive/postgres",
-  "client/core/executor",
-  "client/core/notifier",
-  "client/core/runtime",
-  "client/core/traits",
 ]
 
 [profile.release]

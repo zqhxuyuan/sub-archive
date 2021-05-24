@@ -5,7 +5,7 @@ use sc_chain_spec::{ChainSpecExtension, ChainType, GenericChainSpec};
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
-use archive_runtime::{AccountId, Block, Signature, BABE_GENESIS_EPOCH_CONFIG};
+use archive_runtime::{constants::runtime::BABE_GENESIS_EPOCH_CONFIG, AccountId, Block, Signature};
 use archive_runtime::{BabeConfig, GenesisConfig, GrandpaConfig, SudoConfig, SystemConfig};
 
 type AccountPublic = <Signature as Verify>::Signer;

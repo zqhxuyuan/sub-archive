@@ -18,8 +18,5 @@ sp-utils = { git = "https://github.com/paritytech/substrate", branch = "polkadot
 sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.2" }
 sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.2" }
 
-ac-executor = { path = "../../core/executor" }
-ac-common = { path = "../../common" }
-
-archive-postgres = { path = "../../archive/postgres" }
-archive-kafka = { path = "../../archive/kafka" }
+archive-postgres = { path = "../postgres" }
+archive-kafka = { path = "../kafka" }

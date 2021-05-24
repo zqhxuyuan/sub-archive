@@ -31,7 +31,6 @@ dependencies = [
 name = "ac-executor"
 version = "0.1.0"
 dependencies = [
- "ac-runtime",
  "ac-traits",
  "arc-swap",
  "archive-kafka",
@@ -63,8 +62,6 @@ dependencies = [
 name = "ac-notifier"
 version = "0.1.0"
 dependencies = [
- "ac-common",
- "ac-executor",
  "archive-kafka",
  "archive-postgres",
  "chrono",
@@ -144,13 +141,7 @@ dependencies = [
 name = "ac-service"
 version = "0.9.0"
 dependencies = [
- "ac-common",
- "ac-executor",
- "ac-runtime",
- "ac-traits",
  "arc-swap",
- "archive-kafka",
- "archive-postgres",
  "async-trait",
  "directories",
  "exit-future",
@@ -367,13 +358,6 @@ name = "arc-swap"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4d7d63395147b81a9e570bcc6243aaf71c017bd666d4909cfef0085bdda8d73"
-
-[[package]]
-name = "archive"
-version = "0.1.0"
-dependencies = [
- "archive-cli",
-]
 
 [[package]]
 name = "archive-cli"
@@ -4619,6 +4603,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d95a7db200b97ef370c8e6de0088252f7e0dfff7d047a28528e47456c0fc98b6"
 dependencies = [
  "proc-macro-hack",
+]
+
+[[package]]
+name = "patract-archive"
+version = "0.1.0"
+dependencies = [
+ "archive-cli",
 ]
 
 [[package]]

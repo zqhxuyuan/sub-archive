@@ -49,13 +49,12 @@ grandpa-primitives = { package = "sp-finality-grandpa", git = "https://github.co
 grandpa = { package = "sc-finality-grandpa", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.2" }
 pallet-grandpa = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.2" }
 
-ac-service = { default-features = false, path = "../client/service" }
-ac-traits = { path = "../client/core/traits" }
-ac-executor = { path = "../client/core/executor" }
-ac-notifier = { path = "../client/core/notifier" }
-ac-common = { path = "../client/common" }
-ac-runtime = { path = "../client/core/runtime" }
-
+ac-service = { path = "../client/service", default-features = false }
+ac-common = { path = "../archive" }
+ac-executor = { path = "../archive/executor" }
+ac-notifier = { path = "../archive/notifier" }
+ac-runtime = { path = "../archive/runtime" }
+ac-traits = { path = "../archive/traits" }
 archive-primitives = { path = "../primitives" }
 archive-runtime = { path = "../runtime" }
 archive-executor = { path = "../executor" }
