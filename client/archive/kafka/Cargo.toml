@@ -11,12 +11,9 @@ rdkafka = { version = "0.26", features = ["cmake-build"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-#sp-core = "3.0"
-#sp-runtime = "3.0"
-#sp-storage = "3.0"
-sp-core = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
-sp-runtime = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
-sp-storage = { version = "3.0.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.2" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.2" }
+sp-storage = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.2" }
 
 [dev-dependencies]
 env_logger = "0.8"

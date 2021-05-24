@@ -1,9 +1,0 @@
-[package]
-name = "archive"
-version = "0.1.0"
-authors = ["patract labs <https://github.com/patractlabs>"]
-edition = "2018"
-description = "A archive client of Substrate."
-
-[dependencies]
-cli = { package = "archive-cli", path = "cli" }

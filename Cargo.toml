@@ -1,22 +1,32 @@
-[profile.release]
-panic = "unwind"
+[[bin]]
+name = "archive"
+path = "src/main.rs"
+
+[package]
+name = "archive"
+version = "0.1.0"
+authors = ["Patract <https://github.com/patractlabs>"]
+edition = "2018"
+description = "A archive client of Substrate."
+
+[dependencies]
+cli = { package = "archive-cli", path = "./cli" }
 
 [workspace]
 members = [
-    "bin/archive/",
-    "bin/archive/cli",
-    "bin/archive/primitives",
-    "bin/archive/executor",
-    "bin/archive/runtime",
-    "client/common",
-    "client/service",
-    "client/archive/kafka",
-    "client/archive/postgres",
-    "client/core/executor",
-    "client/core/notifier",
-    "client/core/runtime",
-    "client/core/traits",
+  "cli",
+  "primitives",
+  "executor",
+  "runtime",
+  "client/common",
+  "client/service",
+  "client/archive/kafka",
+  "client/archive/postgres",
+  "client/core/executor",
+  "client/core/notifier",
+  "client/core/runtime",
+  "client/core/traits",
 ]
 
-#[patch."https://github.com/paritytech/substrate"]
-#sc-service = { version = "0.9.0", path = "./client/service" }
+[profile.release]
+panic = "unwind"

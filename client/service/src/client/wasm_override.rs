@@ -43,160 +43,160 @@ use sp_core::traits::RuntimeCode;
 use sp_state_machine::BasicExternalities;
 use sp_version::RuntimeVersion;
 use std::{
-	collections::{hash_map::DefaultHasher, HashMap},
-	fs,
-	hash::Hasher as _,
-	path::{Path, PathBuf},
+    collections::{hash_map::DefaultHasher, HashMap},
+    fs,
+    hash::Hasher as _,
+    path::{Path, PathBuf},
 };
 
 #[derive(Clone, Debug, PartialEq)]
 /// Auxiliary structure that holds a wasm blob and its hash.
 struct WasmBlob {
-	code: Vec<u8>,
-	hash: Vec<u8>,
+    code: Vec<u8>,
+    hash: Vec<u8>,
 }
 
 impl WasmBlob {
-	fn new(code: Vec<u8>) -> Self {
-		let hash = make_hash(&code);
-		Self { code, hash }
-	}
+    fn new(code: Vec<u8>) -> Self {
+        let hash = make_hash(&code);
+        Self { code, hash }
+    }
 
-	fn runtime_code(&self, heap_pages: Option<u64>) -> RuntimeCode {
-		RuntimeCode {
-			code_fetcher: self,
-			hash: self.hash.clone(),
-			heap_pages,
-		}
-	}
+    fn runtime_code(&self, heap_pages: Option<u64>) -> RuntimeCode {
+        RuntimeCode {
+            code_fetcher: self,
+            hash: self.hash.clone(),
+            heap_pages,
+        }
+    }
 }
 
 /// Make a hash out of a byte string using the default rust hasher
 fn make_hash<K: std::hash::Hash + ?Sized>(val: &K) -> Vec<u8> {
-	let mut state = DefaultHasher::new();
-	val.hash(&mut state);
-	state.finish().to_le_bytes().to_vec()
+    let mut state = DefaultHasher::new();
+    val.hash(&mut state);
+    state.finish().to_le_bytes().to_vec()
 }
 
 impl FetchRuntimeCode for WasmBlob {
-	fn fetch_runtime_code<'a>(&'a self) -> Option<std::borrow::Cow<'a, [u8]>> {
-		Some(self.code.as_slice().into())
-	}
+    fn fetch_runtime_code<'a>(&'a self) -> Option<std::borrow::Cow<'a, [u8]>> {
+        Some(self.code.as_slice().into())
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
 #[allow(missing_docs)]
 pub enum WasmOverrideError {
-	#[error("Failed to get runtime version: {0}")]
-	VersionInvalid(String),
+    #[error("Failed to get runtime version: {0}")]
+    VersionInvalid(String),
 
-	#[error("WASM override IO error")]
-	Io(PathBuf, #[source] std::io::Error),
+    #[error("WASM override IO error")]
+    Io(PathBuf, #[source] std::io::Error),
 
-	#[error("Overwriting WASM requires a directory where local \
+    #[error("Overwriting WASM requires a directory where local \
 	WASM is stored. {} is not a directory", .0.display())]
-	NotADirectory(PathBuf),
+    NotADirectory(PathBuf),
 
-	#[error("Duplicate WASM Runtimes found: \n{}\n", .0.join("\n") )]
-	DuplicateRuntime(Vec<String>),
+    #[error("Duplicate WASM Runtimes found: \n{}\n", .0.join("\n") )]
+    DuplicateRuntime(Vec<String>),
 }
 
 impl From<WasmOverrideError> for sp_blockchain::Error {
-	fn from(err: WasmOverrideError) -> Self {
-		Self::Application(Box::new(err))
-	}
+    fn from(err: WasmOverrideError) -> Self {
+        Self::Application(Box::new(err))
+    }
 }
 
 /// Scrapes WASM from a folder and returns WASM from that folder
 /// if the runtime spec version matches.
 #[derive(Clone, Debug)]
 pub struct WasmOverride<E> {
-	// Map of runtime spec version -> Wasm Blob
-	overrides: HashMap<u32, WasmBlob>,
-	executor: E,
+    // Map of runtime spec version -> Wasm Blob
+    overrides: HashMap<u32, WasmBlob>,
+    executor: E,
 }
 
 impl<E> WasmOverride<E>
 where
-	E: RuntimeInfo + Clone + 'static,
+    E: RuntimeInfo + Clone + 'static,
 {
-	pub fn new<P>(path: P, executor: E) -> Result<Self>
-	where
-		P: AsRef<Path>,
-	{
-		let overrides = Self::scrape_overrides(path.as_ref(), &executor)?;
-		Ok(Self {
-			overrides,
-			executor,
-		})
-	}
+    pub fn new<P>(path: P, executor: E) -> Result<Self>
+    where
+        P: AsRef<Path>,
+    {
+        let overrides = Self::scrape_overrides(path.as_ref(), &executor)?;
+        Ok(Self {
+            overrides,
+            executor,
+        })
+    }
 
-	/// Gets an override by it's runtime spec version.
-	///
-	/// Returns `None` if an override for a spec version does not exist.
-	pub fn get<'a, 'b: 'a>(&'b self, spec: &u32, pages: Option<u64>) -> Option<RuntimeCode<'a>> {
-		self.overrides.get(spec).map(|w| w.runtime_code(pages))
-	}
+    /// Gets an override by it's runtime spec version.
+    ///
+    /// Returns `None` if an override for a spec version does not exist.
+    pub fn get<'a, 'b: 'a>(&'b self, spec: &u32, pages: Option<u64>) -> Option<RuntimeCode<'a>> {
+        self.overrides.get(spec).map(|w| w.runtime_code(pages))
+    }
 
-	/// Scrapes a folder for WASM runtimes.
-	/// Returns a hashmap of the runtime version and wasm runtime code.
-	fn scrape_overrides(dir: &Path, executor: &E) -> Result<HashMap<u32, WasmBlob>> {
-		let handle_err = |e: std::io::Error| -> sp_blockchain::Error {
-			WasmOverrideError::Io(dir.to_owned(), e).into()
-		};
+    /// Scrapes a folder for WASM runtimes.
+    /// Returns a hashmap of the runtime version and wasm runtime code.
+    fn scrape_overrides(dir: &Path, executor: &E) -> Result<HashMap<u32, WasmBlob>> {
+        let handle_err = |e: std::io::Error| -> sp_blockchain::Error {
+            WasmOverrideError::Io(dir.to_owned(), e).into()
+        };
 
-		if !dir.is_dir() {
-			return Err(WasmOverrideError::NotADirectory(dir.to_owned()).into());
-		}
+        if !dir.is_dir() {
+            return Err(WasmOverrideError::NotADirectory(dir.to_owned()).into());
+        }
 
-		let mut overrides = HashMap::new();
-		let mut duplicates = Vec::new();
-		for entry in fs::read_dir(dir).map_err(handle_err)? {
-			let entry = entry.map_err(handle_err)?;
-			let path = entry.path();
-			match path.extension().map(|e| e.to_str()).flatten() {
-				Some("wasm") => {
-					let wasm = WasmBlob::new(fs::read(&path).map_err(handle_err)?);
-					let version = Self::runtime_version(executor, &wasm, Some(128))?;
-					if let Some(_duplicate) = overrides.insert(version.spec_version, wasm) {
-						duplicates.push(format!("{}", path.display()));
-					}
-				}
-				_ => (),
-			}
-		}
+        let mut overrides = HashMap::new();
+        let mut duplicates = Vec::new();
+        for entry in fs::read_dir(dir).map_err(handle_err)? {
+            let entry = entry.map_err(handle_err)?;
+            let path = entry.path();
+            match path.extension().map(|e| e.to_str()).flatten() {
+                Some("wasm") => {
+                    let wasm = WasmBlob::new(fs::read(&path).map_err(handle_err)?);
+                    let version = Self::runtime_version(executor, &wasm, Some(128))?;
+                    if let Some(_duplicate) = overrides.insert(version.spec_version, wasm) {
+                        duplicates.push(format!("{}", path.display()));
+                    }
+                }
+                _ => (),
+            }
+        }
 
-		if !duplicates.is_empty() {
-			return Err(WasmOverrideError::DuplicateRuntime(duplicates).into());
-		}
+        if !duplicates.is_empty() {
+            return Err(WasmOverrideError::DuplicateRuntime(duplicates).into());
+        }
 
-		Ok(overrides)
-	}
+        Ok(overrides)
+    }
 
-	fn runtime_version(
-		executor: &E,
-		code: &WasmBlob,
-		heap_pages: Option<u64>,
-	) -> Result<RuntimeVersion> {
-		let mut ext = BasicExternalities::default();
-		executor
-			.runtime_version(&mut ext, &code.runtime_code(heap_pages))
-			.map_err(|e| WasmOverrideError::VersionInvalid(format!("{:?}", e)).into())
-	}
+    fn runtime_version(
+        executor: &E,
+        code: &WasmBlob,
+        heap_pages: Option<u64>,
+    ) -> Result<RuntimeVersion> {
+        let mut ext = BasicExternalities::default();
+        executor
+            .runtime_version(&mut ext, &code.runtime_code(heap_pages))
+            .map_err(|e| WasmOverrideError::VersionInvalid(format!("{:?}", e)).into())
+    }
 }
 
 /// Returns a WasmOverride struct filled with dummy data for testing.
 #[cfg(test)]
 pub fn dummy_overrides<E>(executor: &E) -> WasmOverride<E>
 where
-	E: RuntimeInfo + Clone + 'static,
+    E: RuntimeInfo + Clone + 'static,
 {
-	let mut overrides = HashMap::new();
-	overrides.insert(0, WasmBlob::new(vec![0, 0, 0, 0, 0, 0, 0, 0]));
-	overrides.insert(1, WasmBlob::new(vec![1, 1, 1, 1, 1, 1, 1, 1]));
-	overrides.insert(2, WasmBlob::new(vec![2, 2, 2, 2, 2, 2, 2, 2]));
-	WasmOverride {
-		overrides,
-		executor: executor.clone(),
-	}
+    let mut overrides = HashMap::new();
+    overrides.insert(0, WasmBlob::new(vec![0, 0, 0, 0, 0, 0, 0, 0]));
+    overrides.insert(1, WasmBlob::new(vec![1, 1, 1, 1, 1, 1, 1, 1]));
+    overrides.insert(2, WasmBlob::new(vec![2, 2, 2, 2, 2, 2, 2, 2]));
+    WasmOverride {
+        overrides,
+        executor: executor.clone(),
+    }
 }

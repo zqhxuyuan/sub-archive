@@ -1,9 +1,0 @@
-[package]
-name = "archive-executor"
-version = "0.1.0"
-authors = ["patract labs <https://github.com/patractlabs>"]
-edition = "2018"
-
-[dependencies]
-archive-runtime = { path = "../runtime" }
-sc-executor = { version = "0.9.0", git = "https://github.com/paritytech/substrate", rev="22193e0" }

@@ -1,0 +1,13 @@
+[package]
+name = "archive-executor"
+version = "0.1.0"
+authors = ["Patract <https://github.com/patractlabs>"]
+edition = "2018"
+
+[dependencies]
+sc-executor = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.2" }
+
+archive-runtime = { path = "../runtime" }
+
+[features]
+wasmtime = ["sc-executor/wasmtime"]

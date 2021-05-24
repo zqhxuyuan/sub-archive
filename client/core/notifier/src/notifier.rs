@@ -1,114 +1,151 @@
 use ac_common::config::ArchiveConfig;
-use archive_kafka::{BlockPayload, KafkaConfig, KafkaProducer, KafkaTopicConfig, MetadataPayload};
-use archive_postgres::{BlockModel, MetadataModel, PostgresConfig, PostgresDb};
-use futures::{prelude::*, task::Context, task::Poll};
+use archive_kafka::{BlockPayload, KafkaProducer, MetadataPayload};
+use archive_postgres::{BlockModel, MetadataModel, PostgresDb};
+use futures::prelude::*;
 use log::info;
+use sc_client_api::backend::Backend as SCBackend;
+use sp_api::{ApiExt, Metadata, ProvideRuntimeApi};
+use sp_core::Bytes;
+use sp_runtime::generic::BlockId;
 use sp_runtime::traits::Block as BlockT;
-use sp_utils::mpsc::{tracing_unbounded, TracingUnboundedReceiver, TracingUnboundedSender};
-use std::collections::HashMap;
-use std::env;
+use sp_utils::mpsc::TracingUnboundedReceiver;
+use std::marker::PhantomData;
 use std::sync::Arc;
+use std::time::Instant;
 
-type ArchiveSendMsg<Block> = (
-	BlockModel,
-	MetadataModel,
-	BlockPayload<Block>,
-	MetadataPayload<Block>,
-);
+type ArchiveSendMsg<Block> = (BlockModel, BlockPayload<Block>);
 
-pub struct Notifier<Block>
+pub struct Notifier<B, Block, Client>
 where
-	Block: BlockT,
+    B: SCBackend<Block> + 'static + Send + Sync,
+    Block: BlockT,
+    Client: ProvideRuntimeApi<Block> + 'static + Send + Sync,
+    Client::Api:
+        sp_api::Core<Block> + ApiExt<Block, StateBackend = B::State> + sp_api::Metadata<Block>,
 {
-	pub archive_recv: TracingUnboundedReceiver<ArchiveSendMsg<Block>>,
-	pub db: Arc<PostgresDb>,
-	pub producer: KafkaProducer,
+    pub archive_recv: TracingUnboundedReceiver<ArchiveSendMsg<Block>>,
+    pub db: Arc<PostgresDb>,
+    pub producer: KafkaProducer,
+    pub client: Arc<Client>,
+    pub _ph: PhantomData<B>,
 }
 
-impl<Block> Notifier<Block>
+impl<B, Block, Client> Notifier<B, Block, Client>
 where
-	Block: BlockT,
+    B: SCBackend<Block> + 'static + Send + Sync,
+    Block: BlockT,
+    Client: ProvideRuntimeApi<Block> + 'static + Send + Sync,
+    Client::Api:
+        sp_api::Core<Block> + ApiExt<Block, StateBackend = B::State> + sp_api::Metadata<Block>,
 {
-	pub fn new(
-		archive_recv: TracingUnboundedReceiver<ArchiveSendMsg<Block>>,
-		archive_config: ArchiveConfig,
-	) -> sp_blockchain::Result<Self> {
-		let kafka_config = archive_config.kafka.clone().unwrap();
+    pub fn new(
+        archive_recv: TracingUnboundedReceiver<ArchiveSendMsg<Block>>,
+        archive_config: &ArchiveConfig,
+        client: Arc<Client>,
+    ) -> sp_blockchain::Result<Self> {
+        let kafka_config = archive_config.kafka.clone().unwrap();
 
-		let producer = KafkaProducer::new(kafka_config)
-			.map_err(|e| sp_blockchain::Error::Storage(e.to_string()))?;
+        let producer = KafkaProducer::new(kafka_config)
+            .map_err(|e| sp_blockchain::Error::Storage(e.to_string()))?;
 
-		let postgresdb = futures::executor::block_on(async move {
-			PostgresDb::new(archive_config.clone().postgres)
-				.await
-				.map_err(|e| sp_blockchain::Error::Storage(e.to_string()))
-		})?;
-		let db = Arc::new(postgresdb);
-		info!(target: "notifier", "notifier $$ create and init archiver ok.");
+        let postgresdb = futures::executor::block_on(async move {
+            PostgresDb::new(archive_config.postgres.clone())
+                .await
+                .map_err(|e| sp_blockchain::Error::Storage(e.to_string()))
+        })?;
+        let db = Arc::new(postgresdb);
+        info!(target: "notifier", "notifier $$ create and init archiver ok.");
 
-		Ok(Self {
-			archive_recv,
-			db,
-			producer,
-		})
-	}
+        Ok(Self {
+            archive_recv,
+            db,
+            producer,
+            client,
+            _ph: Default::default(),
+        })
+    }
 
-	pub async fn run(mut self) {
-		loop {
-			let entity = match self.archive_recv.next().await {
-				Some(entity) => entity,
-				None => {
-					return;
-				}
-			};
-			let (block_model, metadata_model, block_payload, metadata_paylod) = entity;
-			self.archive(block_model, metadata_model, block_payload, metadata_paylod)
-				.await;
-		}
-	}
+    pub async fn run(mut self) {
+        loop {
+            let entity = match self.archive_recv.next().await {
+                Some(entity) => entity,
+                None => {
+                    return;
+                }
+            };
+            let (block_model, block_payload) = entity;
+            let _ = self.archive(block_model, block_payload).await;
+        }
+    }
 
-	pub async fn archive(
-		&self,
-		block_model: BlockModel,
-		metadata_model: MetadataModel,
-		block_payload: BlockPayload<Block>,
-		metadata_payload: MetadataPayload<Block>,
-	) -> sp_blockchain::Result<()> {
-		let number = block_model.block_num;
-		let spec_version = block_model.spec_version;
-		info!(target: "notifier", "notifier $$ recv executor result, block number:{}", number);
+    pub async fn archive(
+        &self,
+        block_model: BlockModel,
+        block_payload: BlockPayload<Block>,
+    ) -> sp_blockchain::Result<()> {
+        let number = block_model.block_num;
+        log::debug!(target: "notifier", "notifier >> SYNC {} recv executor result, go to archive", number);
 
-		let exist = self
-			.db
-			.check_if_metadata_exists(spec_version)
-			.await
-			.map_err(|e| sp_blockchain::Error::Storage(e.to_string()))?;
-		match exist {
-			true => info!(target: "notifier",
-						  "notifier $$ don't insert metadata cause existed, version:{}, number:{}!!!",
-						  spec_version, number
-			),
-			false => {
-				self.db
-					.insert(metadata_model)
-					.await
-					.map_err(|e| sp_blockchain::Error::Storage(e.to_string()));
-				self.producer
-					.send(metadata_payload)
-					.await
-					.map_err(|e| sp_blockchain::Error::Storage(e.to_string()));
-			}
-		}
+        let spec_version = block_model.spec_version;
+        let hash = block_payload.block_hash;
+        let block_number = BlockId::Number(number.into());
+        let parent_hash = block_payload.parent_hash;
 
-		self.db
-			.insert(block_model)
-			.await
-			.map_err(|e| sp_blockchain::Error::Storage(e.to_string()));
-		self.producer
-			.send(block_payload)
-			.await
-			.map_err(|e| sp_blockchain::Error::Storage(e.to_string()));
+        // save metadata only when query metadata by version don't exist
+        let exist = self
+            .db
+            .check_if_metadata_exists(spec_version)
+            .await
+            .map_err(|_e| sp_blockchain::Error::Backend("db".to_string()))?;
+        if !exist {
+            let now = Instant::now();
+            let metadata: Result<sp_core::OpaqueMetadata, sp_api::ApiError> =
+                self.client.runtime_api().metadata(&block_number);
+            if metadata.is_err() {
+                panic!(
+                    "get metadata error, block hash:{}, pHash:{}, number:{}, error:{:?}",
+                    hash,
+                    parent_hash,
+                    number,
+                    metadata.err()
+                );
+            }
+            log::debug!(target: "notifier", "notifier >> SYNC {} Took {:?} get metadata, block hash:{} pHash:{}, version:{}", number, now.elapsed(), hash, parent_hash, spec_version);
+            let metadata = metadata.unwrap().to_vec();
 
-		Ok(())
-	}
+            let metadata_model = MetadataModel {
+                spec_version,
+                block_num: number,
+                block_hash: hash.as_ref().to_vec(),
+                meta: metadata.clone(),
+            };
+            let metadata_payload = MetadataPayload::<Block> {
+                spec_version,
+                block_num: block_payload.block_num,
+                block_hash: hash,
+                meta: Bytes(metadata),
+            };
+
+            self.db
+                .insert(metadata_model)
+                .await
+                .map_err(|e| sp_blockchain::Error::Storage(e.to_string()))?;
+            self.producer
+                .send(metadata_payload)
+                .await
+                .map_err(|e| sp_blockchain::Error::Storage(e.to_string()))?;
+        }
+
+        // save block to db and mq
+        self.db
+            .insert(block_model)
+            .await
+            .map_err(|e| sp_blockchain::Error::Storage(e.to_string()))?;
+        self.producer
+            .send(block_payload)
+            .await
+            .map_err(|e| sp_blockchain::Error::Storage(e.to_string()))?;
+
+        Ok(())
+    }
 }

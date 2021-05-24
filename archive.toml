@@ -1,6 +1,25 @@
 [cli]
 block_num=0
+# if we specify an old block_num, but the database already has some data, and if we don't want to sync from
+# the old block_num, so we can ignore it. in this way, the beginning sync block is the max block in database.
 reset_force=false
+# sync strategy
+# - None: disable sync flow
+# - ReadonlyBackend: use rocksdb readonly backend as the ArchiveCore's backend implementation
+# - LocalBackend: use local backend which same as the block import's backend
+strategy="ReadonlyBackend"
+# runtime
+# - RuntimeApi: using bin/archive/runtime generated RuntimeApi
+# - MockRuntimeApi: using client/core/runtime/mock.rs
+# - other RuntimeApi from external import
+runtime="MockRuntimeApi"
+
+[rocksdb]
+#path = "../polkadot/database/chains/polkadot/db"
+#path = "/tmp/dot100/chains/polkadot/db"
+path = "/tmp/dot01/chains/polkadot/db"
+cache_size = 128
+secondary_db_path = "/tmp/dot01_r"
 
 ##################################
 # Archive postgres configuration #
